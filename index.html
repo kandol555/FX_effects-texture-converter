@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>흑백 VFX 툰 변환기 Pro v3</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: radial-gradient(circle at top, #202020, #080808 55%, #000); color: #eee; min-height: 100vh; }
+    .wrap { max-width: 1180px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 20px; }
+    h1 { margin: 0 0 6px; font-size: 26px; }
+    .desc { margin: 0; color: #aaa; font-size: 14px; }
+    .badge { border: 1px solid #555; color: #bbb; padding: 8px 12px; border-radius: 999px; font-size: 12px; white-space: nowrap; }
+    .app { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+    .panel, .viewer { background: rgba(26,26,26,.95); border: 1px solid #333; border-radius: 20px; box-shadow: 0 18px 45px rgba(0,0,0,.35); }
+    .panel { padding: 18px; }
+    .viewer { padding: 16px; }
+    .sectionTitle { font-size: 13px; color: #eee; margin: 18px 0 8px; padding-top: 14px; border-top: 1px solid #333; font-weight: 800; }
+    .sectionTitle:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+    label { display: block; font-size: 12px; color: #cfcfcf; margin: 12px 0 6px; }
+    input[type="file"], select, button {
+      width: 100%; background: #262626; color: #eee; border: 1px solid #444; border-radius: 12px; padding: 10px; font-size: 13px;
+    }
+    input[type="range"] { width: 100%; accent-color: #e5e5e5; }
+    button { cursor: pointer; font-weight: 800; margin-top: 10px; }
+    button.primary { background: #eee; color: #111; border-color: #eee; }
+    button:hover { filter: brightness(1.1); }
+    .row { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: #999; }
+    .presetRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .presetRow button { font-size: 12px; padding: 9px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .canvasBox { background: #050505; border: 1px solid #333; border-radius: 16px; padding: 12px; min-height: 300px; }
+    .canvasBox h2 { font-size: 13px; color: #bbb; margin: 0 0 10px; }
+    canvas { width: 100%; height: auto; display: block; background: #000; border-radius: 12px; }
+    .status { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #111; border: 1px solid #333; color: #aaa; font-size: 12px; line-height: 1.45; }
+    .hint { margin-top: 14px; color: #888; font-size: 12px; line-height: 1.55; }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .grid2 { grid-template-columns: 1fr; }
+      header { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>흑백 VFX 툰 변환기 Pro v3</h1>
+        <p class="desc">API 없이 브라우저에서 실행되는 흑백 VFX 톤 분리 / 툰 스타일 변환 테스트 툴</p>
+      </div>
+      <div class="badge">Local / API Free / HTML</div>
+    </header>
+
+    <div class="app">
+      <aside class="panel">
+        <div class="sectionTitle">1. 이미지</div>
+        <label>이미지 업로드</label>
+        <input id="fileInput" type="file" accept="image/*" />
+
+        <label>출력 해상도</label>
+        <select id="sizeSelect">
+          <option value="original">원본 비율 유지</option>
+          <option value="512" selected>512 x 512</option>
+          <option value="1024">1024 x 1024</option>
+        </select>
+
+        <div class="sectionTitle">2. 프리셋</div>
+        <div class="presetRow">
+          <button type="button" onclick="setPreset('toon')">기본 툰</button>
+          <button type="button" onclick="setPreset('sharp')">날카로운 엣지</button>
+          <button type="button" onclick="setPreset('soft')">부드러운 오라</button>
+        </div>
+
+        <div class="sectionTitle">3. 변환 설정</div>
+        <label>톤 단계</label>
+        <select id="levelsSelect">
+          <option value="1">1단계</option>
+          <option value="2">2단계</option>
+          <option value="3" selected>3단계</option>
+          <option value="4">4단계</option>
+          <option value="5">5단계</option>
+          <option value="6">6단계</option>
+          <option value="7">7단계</option>
+          <option value="8">8단계</option>
+        </select>
+
+        <label>엣지 스타일</label>
+        <select id="edgeMode">
+          <option value="smooth">부드러운 툰 엣지</option>
+          <option value="sharp" selected>날카로운 엣지</option>
+          <option value="jagged">지그재그 / 파편형 엣지</option>
+        </select>
+
+        <label>밝기 조절</label>
+        <div class="row"><span>어둡게</span><span id="brightnessVal">0</span><span>밝게</span></div>
+        <input id="brightness" type="range" min="-120" max="120" step="1" value="0" />
+
+        <label>대비 조절</label>
+        <div class="row"><span>약함</span><span id="contrastVal">1.35</span><span>강함</span></div>
+        <input id="contrast" type="range" min="0.5" max="2.6" step="0.05" value="1.35" />
+
+        <label>블러 정리</label>
+        <div class="row"><span>선명</span><span id="blurVal">1</span><span>부드럽게</span></div>
+        <input id="blur" type="range" min="0" max="5" step="1" value="1" />
+
+        <label>엣지 날카로움</label>
+        <div class="row"><span>약함</span><span id="sharpVal">8</span><span>강함</span></div>
+        <input id="sharpness" type="range" min="2" max="24" step="1" value="8" />
+
+        <label>검정 배경 강도</label>
+        <div class="row"><span>약함</span><span id="blackVal">28</span><span>강함</span></div>
+        <input id="blackCut" type="range" min="0" max="100" step="1" value="28" />
+
+        <button id="processBtn" class="primary">변환하기</button>
+        <button id="downloadBtn">PNG 다운로드</button>
+        <button id="savePresetBtn">현재 설정 저장</button>
+        <button id="loadPresetBtn">저장 설정 불러오기</button>
+
+        <div id="status" class="status">이미지를 업로드하면 자동으로 변환됩니다.</div>
+        <div class="hint">이미지는 서버로 전송되지 않고 브라우저 내부에서만 처리됩니다.</div>
+      </aside>
+
+      <main class="viewer">
+        <div class="grid2">
+          <div class="canvasBox">
+            <h2>원본</h2>
+            <canvas id="srcCanvas"></canvas>
+          </div>
+          <div class="canvasBox">
+            <h2>변환 결과</h2>
+            <canvas id="outCanvas"></canvas>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const srcCanvas = document.getElementById('srcCanvas');
+const outCanvas = document.getElementById('outCanvas');
+const processBtn = document.getElementById('processBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const savePresetBtn = document.getElementById('savePresetBtn');
+const loadPresetBtn = document.getElementById('loadPresetBtn');
+const sizeSelect = document.getElementById('sizeSelect');
+const levelsSelect = document.getElementById('levelsSelect');
+const edgeMode = document.getElementById('edgeMode');
+const brightness = document.getElementById('brightness');
+const contrast = document.getElementById('contrast');
+const blur = document.getElementById('blur');
+const sharpness = document.getElementById('sharpness');
+const blackCut = document.getElementById('blackCut');
+const brightnessVal = document.getElementById('brightnessVal');
+const contrastVal = document.getElementById('contrastVal');
+const blurVal = document.getElementById('blurVal');
+const sharpVal = document.getElementById('sharpVal');
+const blackVal = document.getElementById('blackVal');
+const statusEl = document.getElementById('status');
+
+let loadedImage = null;
+
+function updateLabels() {
+  brightnessVal.textContent = brightness.value;
+  contrastVal.textContent = Number(contrast.value).toFixed(2);
+  blurVal.textContent = blur.value;
+  sharpVal.textContent = sharpness.value;
+  blackVal.textContent = blackCut.value;
+}
+
+[brightness, contrast, blur, sharpness, blackCut].forEach(el => el.addEventListener('input', () => {
+  updateLabels();
+  if (loadedImage) processImage();
+}));
+[sizeSelect, levelsSelect, edgeMode].forEach(el => el.addEventListener('change', () => {
+  if (loadedImage) processImage();
+}));
+
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    loadedImage = img;
+    drawSource();
+    processImage();
+    statusEl.textContent = '이미지 로드 완료. 설정을 바꾸면 실시간으로 변환됩니다.';
+  };
+  img.src = URL.createObjectURL(file);
+});
+
+processBtn.addEventListener('click', () => {
+  if (!loadedImage) {
+    statusEl.textContent = '먼저 이미지를 업로드하세요.';
+    return;
+  }
+  processImage();
+  statusEl.textContent = '변환이 완료되었습니다.';
+});
+
+downloadBtn.addEventListener('click', () => {
+  if (!loadedImage) {
+    statusEl.textContent = '다운로드할 결과가 없습니다.';
+    return;
+  }
+  const a = document.createElement('a');
+  a.download = 'bw-vfx-toon-result-v3.png';
+  a.href = outCanvas.toDataURL('image/png');
+  a.click();
+});
+
+savePresetBtn.addEventListener('click', () => {
+  const settings = {
+    sizeSelect: sizeSelect.value,
+    levelsSelect: levelsSelect.value,
+    edgeMode: edgeMode.value,
+    brightness: brightness.value,
+    contrast: contrast.value,
+    blur: blur.value,
+    sharpness: sharpness.value,
+    blackCut: blackCut.value
+  };
+  localStorage.setItem('bwVfxToonSettings_v3', JSON.stringify(settings));
+  statusEl.textContent = '현재 설정을 브라우저에 저장했습니다.';
+});
+
+loadPresetBtn.addEventListener('click', () => {
+  const raw = localStorage.getItem('bwVfxToonSettings_v3');
+  if (!raw) {
+    statusEl.textContent = '저장된 설정이 없습니다.';
+    return;
+  }
+  const s = JSON.parse(raw);
+  sizeSelect.value = s.sizeSelect ?? '512';
+  levelsSelect.value = s.levelsSelect ?? '3';
+  edgeMode.value = s.edgeMode ?? 'sharp';
+  brightness.value = s.brightness ?? '0';
+  contrast.value = s.contrast ?? '1.35';
+  blur.value = s.blur ?? '1';
+  sharpness.value = s.sharpness ?? '8';
+  blackCut.value = s.blackCut ?? '28';
+  updateLabels();
+  if (loadedImage) processImage();
+  statusEl.textContent = '저장된 설정을 불러왔습니다.';
+});
+
+function setPreset(name) {
+  if (name === 'toon') {
+    levelsSelect.value = '3';
+    edgeMode.value = 'smooth';
+    brightness.value = '0';
+    contrast.value = '1.25';
+    blur.value = '1';
+    sharpness.value = '6';
+    blackCut.value = '25';
+  }
+  if (name === 'sharp') {
+    levelsSelect.value = '4';
+    edgeMode.value = 'sharp';
+    brightness.value = '0';
+    contrast.value = '1.45';
+    blur.value = '1';
+    sharpness.value = '8';
+    blackCut.value = '30';
+  }
+  if (name === 'soft') {
+    levelsSelect.value = '5';
+    edgeMode.value = 'smooth';
+    brightness.value = '8';
+    contrast.value = '1.10';
+    blur.value = '3';
+    sharpness.value = '5';
+    blackCut.value = '18';
+  }
+  updateLabels();
+  if (loadedImage) processImage();
+  statusEl.textContent = '프리셋 적용: ' + name;
+}
+
+function getOutputSize(img) {
+  const size = sizeSelect.value;
+  if (size === 'original') return { w: img.width, h: img.height };
+  const n = parseInt(size, 10);
+  return { w: n, h: n };
+}
+
+function drawContain(ctx, img, w, h) {
+  const scale = Math.min(w / img.width, h / img.height);
+  const nw = img.width * scale;
+  const nh = img.height * scale;
+  const x = (w - nw) / 2;
+  const y = (h - nh) / 2;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, x, y, nw, nh);
+}
+
+function drawSource() {
+  const { w, h } = getOutputSize(loadedImage);
+  srcCanvas.width = w;
+  srcCanvas.height = h;
+  const ctx = srcCanvas.getContext('2d');
+  drawContain(ctx, loadedImage, w, h);
+}
+
+function processImage() {
+  updateLabels();
+  drawSource();
+
+  const w = srcCanvas.width;
+  const h = srcCanvas.height;
+  outCanvas.width = w;
+  outCanvas.height = h;
+
+  const temp = document.createElement('canvas');
+  temp.width = w;
+  temp.height = h;
+  const tctx = temp.getContext('2d');
+  tctx.fillStyle = '#000';
+  tctx.fillRect(0, 0, w, h);
+
+  const blurRadius = parseInt(blur.value, 10);
+  tctx.filter = blurRadius > 0 ? `blur(${blurRadius}px)` : 'none';
+  drawContain(tctx, loadedImage, w, h);
+  tctx.filter = 'none';
+
+  const imgData = tctx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+  const levels = parseInt(levelsSelect.value, 10);
+  const brightnessValue = parseInt(brightness.value, 10);
+  const contrastValue = parseFloat(contrast.value);
+  const cut = parseInt(blackCut.value, 10);
+
+  for (let i = 0; i < data.length; i += 4) {
+    let gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+    gray += brightnessValue;
+    gray = ((gray - 128) * contrastValue) + 128;
+    gray = Math.max(0, Math.min(255, gray));
+    if (gray < cut) gray = 0;
+
+    let stepped;
+    if (levels <= 1) {
+      stepped = gray >= 128 ? 255 : 0;
+    } else {
+      const step = Math.round(gray / (255 / (levels - 1)));
+      stepped = Math.round(step * (255 / (levels - 1)));
+    }
+
+    data[i] = stepped;
+    data[i + 1] = stepped;
+    data[i + 2] = stepped;
+    data[i + 3] = 255;
+  }
+
+  if (edgeMode.value !== 'smooth') {
+    applyAngularEdges(imgData, w, h, parseInt(sharpness.value, 10), edgeMode.value === 'jagged');
+  }
+
+  const octx = outCanvas.getContext('2d');
+  octx.putImageData(imgData, 0, 0);
+}
+
+function applyAngularEdges(imgData, w, h, blockSize, jagged) {
+  const data = imgData.data;
+  const copy = new Uint8ClampedArray(data);
+  const threshold = jagged ? 18 : 26;
+
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = (y * w + x) * 4;
+      const gx = Math.abs(copy[i + 4] - copy[i - 4]);
+      const gy = Math.abs(copy[i + w * 4] - copy[i - w * 4]);
+      const edge = gx + gy;
+
+      if (edge > threshold) {
+        const bx = Math.floor(x / blockSize) * blockSize;
+        const by = Math.floor(y / blockSize) * blockSize;
+        const checker = (Math.floor(x / blockSize) + Math.floor(y / blockSize)) % 2;
+        let offset = checker === 0 ? (x - bx) : (blockSize - (x - bx));
+
+        if (jagged) {
+          const wave = ((x * 13 + y * 7) % blockSize) - blockSize / 2;
+          offset = Math.round((offset + wave) / 2) * 2;
+        }
+
+        const targetY = Math.max(0, Math.min(h - 1, by + offset));
+        const ti = (targetY * w + x) * 4;
+        data[i] = copy[ti];
+        data[i + 1] = copy[ti + 1];
+        data[i + 2] = copy[ti + 2];
+      }
+    }
+  }
+}
+
+updateLabels();
+</script>
+</body>
+</html>
