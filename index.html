@@ -1,400 +1,755 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>흑백 VFX 툰 변환기 Pro v3</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 24px; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: radial-gradient(circle at top, #202020, #080808 55%, #000); color: #eee; min-height: 100vh; }
-    .wrap { max-width: 1180px; margin: 0 auto; }
-    header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 20px; }
-    h1 { margin: 0 0 6px; font-size: 26px; }
-    .desc { margin: 0; color: #aaa; font-size: 14px; }
-    .badge { border: 1px solid #555; color: #bbb; padding: 8px 12px; border-radius: 999px; font-size: 12px; white-space: nowrap; }
-    .app { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
-    .panel, .viewer { background: rgba(26,26,26,.95); border: 1px solid #333; border-radius: 20px; box-shadow: 0 18px 45px rgba(0,0,0,.35); }
-    .panel { padding: 18px; }
-    .viewer { padding: 16px; }
-    .sectionTitle { font-size: 13px; color: #eee; margin: 18px 0 8px; padding-top: 14px; border-top: 1px solid #333; font-weight: 800; }
-    .sectionTitle:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
-    label { display: block; font-size: 12px; color: #cfcfcf; margin: 12px 0 6px; }
-    input[type="file"], select, button {
-      width: 100%; background: #262626; color: #eee; border: 1px solid #444; border-radius: 12px; padding: 10px; font-size: 13px;
-    }
-    input[type="range"] { width: 100%; accent-color: #e5e5e5; }
-    button { cursor: pointer; font-weight: 800; margin-top: 10px; }
-    button.primary { background: #eee; color: #111; border-color: #eee; }
-    button:hover { filter: brightness(1.1); }
-    .row { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: #999; }
-    .presetRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .presetRow button { font-size: 12px; padding: 9px; }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .canvasBox { background: #050505; border: 1px solid #333; border-radius: 16px; padding: 12px; min-height: 300px; }
-    .canvasBox h2 { font-size: 13px; color: #bbb; margin: 0 0 10px; }
-    canvas { width: 100%; height: auto; display: block; background: #000; border-radius: 12px; }
-    .status { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #111; border: 1px solid #333; color: #aaa; font-size: 12px; line-height: 1.45; }
-    .hint { margin-top: 14px; color: #888; font-size: 12px; line-height: 1.55; }
-    @media (max-width: 900px) {
-      .app { grid-template-columns: 1fr; }
-      .grid2 { grid-template-columns: 1fr; }
-      header { align-items: flex-start; flex-direction: column; }
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>게임 이펙트 텍스쳐 변환기</title>
+<style>
+*{box-sizing:border-box}
+html,body{overflow-x:hidden}
+body{margin:0;padding:24px;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top,#202020,#080808 55%,#000);color:#eee;min-height:100vh}body.draggingRange{user-select:none}
+.wrap{max-width:1440px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:20px}
+h1{margin:0 0 6px;font-size:26px}.desc{margin:0;color:#aaa;font-size:14px}
+.badge{border:1px solid #555;color:#bbb;padding:8px 12px;border-radius:999px;font-size:12px;white-space:nowrap}
+.app{display:grid;grid-template-columns:380px 1fr;gap:20px;min-width:0}.app > *{min-width:0}
+.panel,.viewer{background:rgba(26,26,26,.95);border:1px solid #333;border-radius:20px;box-shadow:0 18px 45px rgba(0,0,0,.35)}
+.panel{padding:18px;max-height:calc(100vh - 120px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}.viewer{padding:16px;overflow-x:hidden}
+.sectionTitle{font-size:16px;color:#ffd84a;margin:26px 0 12px;padding-top:16px;border-top:5px double #555;font-weight:900;letter-spacing:.02em;text-shadow:0 0 10px rgba(255,216,74,.35)}
+.sectionTitle:first-child{border-top:0;padding-top:0;margin-top:0}
+label{display:block;font-size:12px;color:#cfcfcf;margin:12px 0 6px}
+input[type=file],select,button{width:100%;background:#262626;color:#eee;border:1px solid #444;border-radius:12px;padding:10px;font-size:13px}
+input[type=range]{width:100%;height:30px;display:block;accent-color:#e5e5e5;cursor:pointer;touch-action:none;position:relative;z-index:5;user-select:none}
+button{cursor:pointer;font-weight:800;margin-top:10px}button.primary{background:#eee;color:#111;border-color:#eee}button.small{margin-top:8px;padding:8px 10px;font-size:12px}button:hover{filter:brightness(1.1)}
+.row{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#999}
+.inlineTwo{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:end}.inlineTwo .slot label{margin-top:0}
+.resultsGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;min-width:0}.resultsGrid > *{min-width:0}
+.canvasBox{background:#050505;border:1px solid #333;border-radius:16px;padding:12px;min-height:300px}
+.canvasBox h2{font-size:13px;color:#bbb;margin:0 0 10px}.canvasBox p{font-size:11px;color:#7f7f7f;margin:0 0 10px}
+.imageControlBox{background:#0b0b0b;border-color:#333}.imageControlBox .sectionTitle{margin-top:0;border-top:0;padding-top:0}
+canvas{width:100%;height:auto;display:block;background:#000;border-radius:12px}
+.status{margin-top:12px;padding:10px 12px;border-radius:12px;background:#111;border:1px solid #333;color:#aaa;font-size:12px;line-height:1.45}
+.hint{margin-top:14px;color:#888;font-size:12px;line-height:1.55}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#eee;color:#111;border:1px solid #fff;border-radius:999px;padding:12px 18px;font-size:13px;font-weight:800;box-shadow:0 16px 35px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;z-index:9999}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.rayActionWrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}.rayActionWrap select,.rayActionWrap button{height:46px;min-height:46px;margin-top:0;width:100%}#applyRayBtn.applying{position:relative;border-color:#ffd84a;box-shadow:0 0 0 2px rgba(255,216,74,.25),0 0 22px rgba(255,216,74,.65);overflow:hidden}#applyRayBtn.applying::after{content:'';position:absolute;inset:-3px;background:linear-gradient(90deg,transparent,rgba(255,216,74,.55),transparent);animation:raySweep .9s linear infinite;pointer-events:none}@keyframes raySweep{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+@media (orientation: portrait){.resultsGrid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:980px){.app{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.panel{max-height:none}}
+@media(max-width:640px) and (orientation: portrait){.resultsGrid{grid-template-columns:repeat(2,minmax(0,1fr));}.canvasBox{min-height:220px}}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>흑백 VFX 툰 변환기 Pro v3</h1>
-        <p class="desc">API 없이 브라우저에서 실행되는 흑백 VFX 톤 분리 / 툰 스타일 변환 테스트 툴</p>
-      </div>
-      <div class="badge">Local / API Free / HTML</div>
-    </header>
+<div class="wrap">
+<header>
+  <div>
+    <h1>게임 이펙트 텍스쳐 변환기</h1>
+    <p class="desc">게임 이펙트 텍스쳐용 흑백 VFX 변환 툴</p>
+  </div>
+  <div class="badge">Local / API Free / HTML</div>
+</header>
 
-    <div class="app">
-      <aside class="panel">
-        <div class="sectionTitle">1. 이미지</div>
-        <label>이미지 업로드</label>
-        <input id="fileInput" type="file" accept="image/*" />
+<div class="app">
+<aside class="panel">
+  <div class="sectionTitle">2. 카툰</div>
+  <label>톤 단계</label>
+  <select id="levelsSelect">
+    <option value="1">1단계</option><option value="2">2단계</option><option value="3" selected>3단계</option><option value="4">4단계</option>
+    <option value="5">5단계</option><option value="6">6단계</option><option value="7">7단계</option><option value="8">8단계</option>
+  </select>
 
-        <label>출력 해상도</label>
-        <select id="sizeSelect">
-          <option value="original">원본 비율 유지</option>
-          <option value="512" selected>512 x 512</option>
-          <option value="1024">1024 x 1024</option>
-        </select>
+  <label>밝기 조절</label>
+  <div class="row"><span>어둡게</span><span id="brightnessVal">0</span><span>밝게</span></div>
+  <input id="brightness" type="range" min="-120" max="120" step="1" value="0" />
 
-        <div class="sectionTitle">2. 프리셋</div>
-        <div class="presetRow">
-          <button type="button" onclick="setPreset('toon')">기본 툰</button>
-          <button type="button" onclick="setPreset('sharp')">날카로운 엣지</button>
-          <button type="button" onclick="setPreset('soft')">부드러운 오라</button>
-        </div>
+  <label>대비 조절</label>
+  <div class="row"><span>약함</span><span id="contrastVal">1.35</span><span>강함</span></div>
+  <input id="contrast" type="range" min="0.5" max="2.6" step="0.05" value="1.35" />
 
-        <div class="sectionTitle">3. 변환 설정</div>
-        <label>톤 단계</label>
-        <select id="levelsSelect">
-          <option value="1">1단계</option>
-          <option value="2">2단계</option>
-          <option value="3" selected>3단계</option>
-          <option value="4">4단계</option>
-          <option value="5">5단계</option>
-          <option value="6">6단계</option>
-          <option value="7">7단계</option>
-          <option value="8">8단계</option>
-        </select>
+  <label>검정 배경 강도</label>
+  <div class="row"><span>약함</span><span id="blackVal">28</span><span>강함</span></div>
+  <input id="blackCut" type="range" min="0" max="100" step="1" value="28" />
 
-        <label>엣지 스타일</label>
-        <select id="edgeMode">
-          <option value="smooth">부드러운 툰 엣지</option>
-          <option value="sharp" selected>날카로운 엣지</option>
-          <option value="jagged">지그재그 / 파편형 엣지</option>
-        </select>
+    <input id="edgeMode" type="hidden" value="smooth" />
 
-        <label>밝기 조절</label>
-        <div class="row"><span>어둡게</span><span id="brightnessVal">0</span><span>밝게</span></div>
-        <input id="brightness" type="range" min="-120" max="120" step="1" value="0" />
+  <label>블러 정리</label>
+  <div class="row"><span>선명</span><span id="blurVal">1</span><span>부드럽게</span></div>
+  <input id="blur" type="range" min="0" max="5" step="1" value="1" />
 
-        <label>대비 조절</label>
-        <div class="row"><span>약함</span><span id="contrastVal">1.35</span><span>강함</span></div>
-        <input id="contrast" type="range" min="0.5" max="2.6" step="0.05" value="1.35" />
+  <span id="sharpVal" style="display:none">8</span>
+  <input id="sharpness" type="hidden" value="8" />
 
-        <label>블러 정리</label>
-        <div class="row"><span>선명</span><span id="blurVal">1</span><span>부드럽게</span></div>
-        <input id="blur" type="range" min="0" max="5" step="1" value="1" />
+  <input id="angularMode" type="hidden" value="mild" />
 
-        <label>엣지 날카로움</label>
-        <div class="row"><span>약함</span><span id="sharpVal">8</span><span>강함</span></div>
-        <input id="sharpness" type="range" min="2" max="24" step="1" value="8" />
+  <label>각진 강도</label>
+  <div class="row"><span>약함</span><span id="angularVal">10</span><span>강함</span></div>
+  <input id="angularStrength" type="range" min="0" max="30" step="1" value="10" />
 
-        <label>검정 배경 강도</label>
-        <div class="row"><span>약함</span><span id="blackVal">28</span><span>강함</span></div>
-        <input id="blackCut" type="range" min="0" max="100" step="1" value="28" />
+  <label>조각 크기</label>
+  <div class="row"><span>작게</span><span id="cellVal">18</span><span>크게</span></div>
+  <input id="cellSize" type="range" min="4" max="60" step="1" value="18" />
 
-        <button id="processBtn" class="primary">변환하기</button>
-        <button id="downloadBtn">PNG 다운로드</button>
-        <button id="savePresetBtn">현재 설정 저장</button>
-        <button id="loadPresetBtn">저장 설정 불러오기</button>
+  <input id="angularDirection" type="hidden" value="random" />
 
-        <div id="status" class="status">이미지를 업로드하면 자동으로 변환됩니다.</div>
-        <div class="hint">이미지는 서버로 전송되지 않고 브라우저 내부에서만 처리됩니다.</div>
-      </aside>
+  <div class="sectionTitle">3. 라인아트</div>
+  <label>라인아트</label>
+  <select id="lineArtMode">
+    <option value="off" selected>끄기</option>
+    <option value="black">검정 라인</option>
+    <option value="white">흰색 라인</option>
+    <option value="gray">회색 라인</option>
+    <option value="only">라인만 보기</option>
+  </select>
 
-      <main class="viewer">
-        <div class="grid2">
-          <div class="canvasBox">
-            <h2>원본</h2>
-            <canvas id="srcCanvas"></canvas>
-          </div>
-          <div class="canvasBox">
-            <h2>변환 결과</h2>
-            <canvas id="outCanvas"></canvas>
-          </div>
-        </div>
-      </main>
+  <label>라인 강도</label>
+  <div class="row"><span>약함</span><span id="lineStrengthVal">80</span><span>강함</span></div>
+  <input id="lineStrength" type="range" min="10" max="220" step="1" value="80" />
+
+  <label>라인 두께</label>
+  <div class="row"><span>얇게</span><span id="lineThicknessVal">1</span><span>두껍게</span></div>
+  <input id="lineThickness" type="range" min="0" max="6" step="1" value="1" />
+
+  <label>라인아트 블러</label>
+  <div class="row"><span>선명</span><span id="lineBlurVal">0</span><span>부드럽게</span></div>
+  <input id="lineBlur" type="range" min="0" max="12" step="1" value="0" />
+
+  <div class="sectionTitle">4. 가우시안 블러</div>
+  <label>가우시안 블러</label>
+  <select id="gaussianMode">
+    <option value="off" selected>끄기</option>
+    <option value="all">전체 적용</option>
+    <option value="bright">밝은 영역만</option>
+    <option value="dark">어두운 영역만</option>
+  </select>
+
+  <label>블러 반경</label>
+  <div class="row"><span>약함</span><span id="gaussianRadiusVal">4</span><span>강함</span></div>
+  <input id="gaussianRadius" type="range" min="1" max="20" step="1" value="4" />
+
+  <label>블러 혼합 강도</label>
+  <div class="row"><span>약함</span><span id="gaussianOpacityVal">0.45</span><span>강함</span></div>
+  <input id="gaussianOpacity" type="range" min="0" max="1" step="0.05" value="0.45" />
+
+  <label>확산 후 톤 재정리</label>
+  <div class="row"><span>0단계</span><span id="gaussianPosterizeVal">0단계</span><span>8단계</span></div>
+  <input id="gaussianPosterize" type="range" min="0" max="8" step="1" value="0" />
+
+  <div class="sectionTitle">5. Glow Spread</div>
+  <label>Glow Spread</label>
+  <select id="glowMode">
+    <option value="off" selected>끄기</option>
+    <option value="soft">약하게 확산</option>
+    <option value="medium">보통 확산</option>
+    <option value="strong">강하게 확산</option>
+    <option value="toon">툰 오라 확산</option>
+  </select>
+
+  <label>확산 반경</label>
+  <div class="row"><span>좁게</span><span id="glowRadiusVal">14</span><span>넓게</span></div>
+  <input id="glowRadius" type="range" min="2" max="60" step="1" value="14" />
+
+  <label>확산 강도</label>
+  <div class="row"><span>약함</span><span id="glowStrengthVal">0.55</span><span>강함</span></div>
+  <input id="glowStrength" type="range" min="0" max="1.5" step="0.05" value="0.55" />
+
+  <label>밝은 영역 기준값</label>
+  <div class="row"><span>낮게</span><span id="glowThresholdVal">140</span><span>높게</span></div>
+  <input id="glowThreshold" type="range" min="30" max="240" step="1" value="140" />
+
+  <label>확산 후 톤 재정리</label>
+  <div class="row"><span>0단계</span><span id="glowPosterizeVal">0단계</span><span>8단계</span></div>
+  <input id="glowPosterize" type="range" min="0" max="8" step="1" value="0" />
+
+  <div class="sectionTitle">6. Bright Ray</div>
+  <div class="rayActionWrap">
+    <div class="slot">
+      <label>Ray 품질</label>
+      <select id="rayQuality">
+        <option value="fast">빠름</option>
+        <option value="normal" selected>보통</option>
+        <option value="high">고품질</option>
+      </select>
+    </div>
+    <div class="slot">
+      <label>&nbsp;</label>
+      <button id="applyRayBtn" class="primary">Bright Ray 적용</button>
     </div>
   </div>
 
+
+  <label>Bright Ray</label>
+  <select id="rayMode">
+    <option value="off" selected>끄기</option>
+    <option value="radial">중심 방사형</option>
+    <option value="down">위 → 아래</option>
+    <option value="up">아래 → 위</option>
+    <option value="right">왼쪽 → 오른쪽</option>
+    <option value="left">오른쪽 → 왼쪽</option>
+    <option value="angle">각도 지정</option>
+  </select>
+
+  <label>캔버스 내 이미지 크기 (Canvas Size 스타일)</label>
+  <div class="row"><span>축소</span><span id="rayInputScaleVal">100%</span><span>원본 크기</span></div>
+  <input id="rayInputScale" type="range" min="10" max="100" step="1" value="100" />
+
+  <label>Ray 길이</label>
+  <div class="row"><span>짧게</span><span id="rayLengthVal">80</span><span>길게</span></div>
+  <input id="rayLength" type="range" min="10" max="240" step="1" value="80" />
+
+  <label>Ray 강도</label>
+  <div class="row"><span>약함</span><span id="rayStrengthVal">0.70</span><span>강함</span></div>
+  <input id="rayStrength" type="range" min="0" max="2" step="0.05" value="0.70" />
+
+  <label>Ray 퍼짐(폭)</label>
+  <div class="row"><span>좁게</span><span id="raySpreadVal">2</span><span>넓게</span></div>
+  <input id="raySpread" type="range" min="0" max="12" step="1" value="2" />
+
+  <label>Ray 블러</label>
+  <div class="row"><span>선명</span><span id="rayBlurVal">2</span><span>부드럽게</span></div>
+  <input id="rayBlur" type="range" min="0" max="12" step="1" value="2" />
+
+  <label>Ray 밝은 영역 기준값</label>
+  <div class="row"><span>낮게</span><span id="rayThresholdVal">160</span><span>높게</span></div>
+  <input id="rayThreshold" type="range" min="40" max="250" step="1" value="160" />
+
+  <label>Ray 각도</label>
+  <div class="row"><span>-180°</span><span id="rayAngleVal">0°</span><span>180°</span></div>
+  <input id="rayAngle" type="range" min="-180" max="180" step="1" value="0" />
+
+  <label>Ray 후 톤 재정리</label>
+  <div class="row"><span>0단계</span><span id="rayPosterizeVal">0단계</span><span>8단계</span></div>
+  <input id="rayPosterize" type="range" min="0" max="8" step="1" value="0" />
+
+  <div id="status" class="status">1. 이미지 설정은 결과 영역 첫 번째 카드에서 조절합니다. 이미지를 업로드하면 2~5번 기능 확인용 기본 옵션이 자동 적용됩니다.</div>
+  <div class="hint">중요: 3~6번 결과는 서로 섞이지 않고, 업로드한 이미지에 각 효과만 따로 적용됩니다. Bright Ray 설정을 바꾼 뒤에는 "Bright Ray 적용" 버튼을 눌러 갱신하세요.</div>
+</aside>
+
+<main class="viewer">
+  <div class="resultsGrid">
+    <div class="canvasBox imageControlBox">
+      <div class="sectionTitle">1. 이미지</div>
+  <label>이미지 업로드</label>
+  <input id="fileInput" type="file" accept="image/*" />
+
+  <label>출력 해상도</label>
+  <select id="sizeSelect">
+    <option value="original">원본 비율 유지</option>
+    <option value="512" selected>512 x 512</option>
+    <option value="1024">1024 x 1024</option>
+  </select>
+
+  <label>캔버스 내 이미지 크기 (Canvas Size 스타일)</label>
+  <div class="row"><span>축소</span><span id="inputScaleVal">100%</span><span>원본 크기</span></div>
+  <input id="inputScale" type="range" min="10" max="100" step="1" value="100" />
+    </div>
+    
+    <div class="canvasBox">
+      <h2>2. 카툰 변환 결과</h2>
+      <p>2. 카툰 설정만 반영된 통합 결과</p>
+      <canvas id="mainCanvas"></canvas>
+      <button class="small" onclick="downloadCanvas('mainCanvas','main-transform-result.png')">변환 결과 다운로드</button>
+    </div>
+    <div class="canvasBox">
+      <h2>3. 라인아트 변환 결과</h2>
+      <p>3. 라인아트와 라인아트 블러만 원본 이미지에 직접 적용</p>
+      <canvas id="lineCanvas"></canvas>
+      <button class="small" onclick="downloadCanvas('lineCanvas','lineart-result.png')">라인아트 다운로드</button>
+    </div>
+    <div class="canvasBox">
+      <h2>4. 가우시안 블러 변환 결과</h2>
+      <p>4. 가우시안 블러와 톤 재정리만 원본 이미지에 직접 적용</p>
+      <canvas id="gaussianCanvasView"></canvas>
+      <button class="small" onclick="downloadCanvas('gaussianCanvasView','gaussian-result.png')">가우시안 블러 다운로드</button>
+    </div>
+    <div class="canvasBox">
+      <h2>5. Glow Spread 변환 결과</h2>
+      <p>5. Glow Spread만 원본 이미지에 직접 적용</p>
+      <canvas id="glowCanvasView"></canvas>
+      <button class="small" onclick="downloadCanvas('glowCanvasView','glow-spread-result.png')">Glow Spread 다운로드</button>
+    </div>
+    <div class="canvasBox">
+      <h2>6. Bright Ray 변화 결과</h2>
+      <p>6. Bright Ray만 원본 이미지에 직접 적용</p>
+      <canvas id="rayCanvasView"></canvas>
+      <button class="small" onclick="downloadCanvas('rayCanvasView','bright-ray-result.png')">Bright Ray 다운로드</button>
+    </div>
+  </div>
+</main>
+</div>
+</div>
+<div style="display:none" aria-hidden="true"><canvas id="srcCanvas"></canvas></div>
+<div id="toast" class="toast"></div>
+
 <script>
-const fileInput = document.getElementById('fileInput');
-const srcCanvas = document.getElementById('srcCanvas');
-const outCanvas = document.getElementById('outCanvas');
-const processBtn = document.getElementById('processBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-const savePresetBtn = document.getElementById('savePresetBtn');
-const loadPresetBtn = document.getElementById('loadPresetBtn');
-const sizeSelect = document.getElementById('sizeSelect');
-const levelsSelect = document.getElementById('levelsSelect');
-const edgeMode = document.getElementById('edgeMode');
-const brightness = document.getElementById('brightness');
-const contrast = document.getElementById('contrast');
-const blur = document.getElementById('blur');
-const sharpness = document.getElementById('sharpness');
-const blackCut = document.getElementById('blackCut');
-const brightnessVal = document.getElementById('brightnessVal');
-const contrastVal = document.getElementById('contrastVal');
-const blurVal = document.getElementById('blurVal');
-const sharpVal = document.getElementById('sharpVal');
-const blackVal = document.getElementById('blackVal');
-const statusEl = document.getElementById('status');
+const $=id=>document.getElementById(id);
+const ids=['fileInput','srcCanvas','mainCanvas','lineCanvas','gaussianCanvasView','glowCanvasView','rayCanvasView','sizeSelect','inputScale','rayInputScale','levelsSelect','edgeMode','brightness','contrast','blur','sharpness','blackCut','angularMode','angularStrength','cellSize','angularDirection','lineArtMode','lineStrength','lineThickness','lineBlur','gaussianMode','gaussianRadius','gaussianOpacity','gaussianPosterize','gaussianPosterize','glowMode','glowRadius','glowStrength','glowThreshold','glowPosterize','rayInputScale','rayQuality','applyRayBtn','rayMode','rayLength','rayStrength','raySpread','rayBlur','rayThreshold','rayAngle','rayPosterize','status','toast'];
+ids.forEach(id=>window[id]=$(id));
+const vals=['inputScaleVal','rayInputScaleVal','brightnessVal','contrastVal','blurVal','sharpVal','blackVal','angularVal','cellVal','lineStrengthVal','lineThicknessVal','lineBlurVal','gaussianRadiusVal','gaussianOpacityVal','gaussianPosterizeVal','glowRadiusVal','glowStrengthVal','glowThresholdVal','glowPosterizeVal','rayPosterizeVal','rayLengthVal','rayStrengthVal','raySpreadVal','rayBlurVal','rayThresholdVal','rayAngleVal'];
+vals.forEach(id=>window[id]=$(id));
+let loadedImage=null;
+let rayDirty=false;
 
-let loadedImage = null;
-
-function updateLabels() {
-  brightnessVal.textContent = brightness.value;
-  contrastVal.textContent = Number(contrast.value).toFixed(2);
-  blurVal.textContent = blur.value;
-  sharpVal.textContent = sharpness.value;
-  blackVal.textContent = blackCut.value;
-}
-
-[brightness, contrast, blur, sharpness, blackCut].forEach(el => el.addEventListener('input', () => {
-  updateLabels();
-  if (loadedImage) processImage();
-}));
-[sizeSelect, levelsSelect, edgeMode].forEach(el => el.addEventListener('change', () => {
-  if (loadedImage) processImage();
-}));
-
-fileInput.addEventListener('change', e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const img = new Image();
-  img.onload = () => {
-    loadedImage = img;
-    drawSource();
-    processImage();
-    statusEl.textContent = '이미지 로드 완료. 설정을 바꾸면 실시간으로 변환됩니다.';
-  };
-  img.src = URL.createObjectURL(file);
-});
-
-processBtn.addEventListener('click', () => {
-  if (!loadedImage) {
-    statusEl.textContent = '먼저 이미지를 업로드하세요.';
-    return;
-  }
-  processImage();
-  statusEl.textContent = '변환이 완료되었습니다.';
-});
-
-downloadBtn.addEventListener('click', () => {
-  if (!loadedImage) {
-    statusEl.textContent = '다운로드할 결과가 없습니다.';
-    return;
-  }
-  const a = document.createElement('a');
-  a.download = 'bw-vfx-toon-result-v3.png';
-  a.href = outCanvas.toDataURL('image/png');
-  a.click();
-});
-
-savePresetBtn.addEventListener('click', () => {
-  const settings = {
-    sizeSelect: sizeSelect.value,
-    levelsSelect: levelsSelect.value,
-    edgeMode: edgeMode.value,
-    brightness: brightness.value,
-    contrast: contrast.value,
-    blur: blur.value,
-    sharpness: sharpness.value,
-    blackCut: blackCut.value
-  };
-  localStorage.setItem('bwVfxToonSettings_v3', JSON.stringify(settings));
-  statusEl.textContent = '현재 설정을 브라우저에 저장했습니다.';
-});
-
-loadPresetBtn.addEventListener('click', () => {
-  const raw = localStorage.getItem('bwVfxToonSettings_v3');
-  if (!raw) {
-    statusEl.textContent = '저장된 설정이 없습니다.';
-    return;
-  }
-  const s = JSON.parse(raw);
-  sizeSelect.value = s.sizeSelect ?? '512';
-  levelsSelect.value = s.levelsSelect ?? '3';
-  edgeMode.value = s.edgeMode ?? 'sharp';
-  brightness.value = s.brightness ?? '0';
-  contrast.value = s.contrast ?? '1.35';
-  blur.value = s.blur ?? '1';
-  sharpness.value = s.sharpness ?? '8';
-  blackCut.value = s.blackCut ?? '28';
-  updateLabels();
-  if (loadedImage) processImage();
-  statusEl.textContent = '저장된 설정을 불러왔습니다.';
-});
-
-function setPreset(name) {
-  if (name === 'toon') {
-    levelsSelect.value = '3';
-    edgeMode.value = 'smooth';
-    brightness.value = '0';
-    contrast.value = '1.25';
-    blur.value = '1';
-    sharpness.value = '6';
-    blackCut.value = '25';
-  }
-  if (name === 'sharp') {
-    levelsSelect.value = '4';
-    edgeMode.value = 'sharp';
-    brightness.value = '0';
-    contrast.value = '1.45';
-    blur.value = '1';
-    sharpness.value = '8';
-    blackCut.value = '30';
-  }
-  if (name === 'soft') {
-    levelsSelect.value = '5';
-    edgeMode.value = 'smooth';
-    brightness.value = '8';
-    contrast.value = '1.10';
-    blur.value = '3';
-    sharpness.value = '5';
-    blackCut.value = '18';
-  }
-  updateLabels();
-  if (loadedImage) processImage();
-  statusEl.textContent = '프리셋 적용: ' + name;
-}
-
-function getOutputSize(img) {
-  const size = sizeSelect.value;
-  if (size === 'original') return { w: img.width, h: img.height };
-  const n = parseInt(size, 10);
-  return { w: n, h: n };
-}
-
-function drawContain(ctx, img, w, h) {
-  const scale = Math.min(w / img.width, h / img.height);
-  const nw = img.width * scale;
-  const nh = img.height * scale;
-  const x = (w - nw) / 2;
-  const y = (h - nh) / 2;
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, w, h);
-  ctx.drawImage(img, x, y, nw, nh);
-}
-
-function drawSource() {
-  const { w, h } = getOutputSize(loadedImage);
-  srcCanvas.width = w;
-  srcCanvas.height = h;
-  const ctx = srcCanvas.getContext('2d');
-  drawContain(ctx, loadedImage, w, h);
-}
-
-function processImage() {
-  updateLabels();
-  drawSource();
-
-  const w = srcCanvas.width;
-  const h = srcCanvas.height;
-  outCanvas.width = w;
-  outCanvas.height = h;
-
-  const temp = document.createElement('canvas');
-  temp.width = w;
-  temp.height = h;
-  const tctx = temp.getContext('2d');
-  tctx.fillStyle = '#000';
-  tctx.fillRect(0, 0, w, h);
-
-  const blurRadius = parseInt(blur.value, 10);
-  tctx.filter = blurRadius > 0 ? `blur(${blurRadius}px)` : 'none';
-  drawContain(tctx, loadedImage, w, h);
-  tctx.filter = 'none';
-
-  const imgData = tctx.getImageData(0, 0, w, h);
-  const data = imgData.data;
-  const levels = parseInt(levelsSelect.value, 10);
-  const brightnessValue = parseInt(brightness.value, 10);
-  const contrastValue = parseFloat(contrast.value);
-  const cut = parseInt(blackCut.value, 10);
-
-  for (let i = 0; i < data.length; i += 4) {
-    let gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-    gray += brightnessValue;
-    gray = ((gray - 128) * contrastValue) + 128;
-    gray = Math.max(0, Math.min(255, gray));
-    if (gray < cut) gray = 0;
-
-    let stepped;
-    if (levels <= 1) {
-      stepped = gray >= 128 ? 255 : 0;
-    } else {
-      const step = Math.round(gray / (255 / (levels - 1)));
-      stepped = Math.round(step * (255 / (levels - 1)));
-    }
-
-    data[i] = stepped;
-    data[i + 1] = stepped;
-    data[i + 2] = stepped;
-    data[i + 3] = 255;
-  }
-
-  if (edgeMode.value !== 'smooth') {
-    applyAngularEdges(imgData, w, h, parseInt(sharpness.value, 10), edgeMode.value === 'jagged');
-  }
-
-  const octx = outCanvas.getContext('2d');
-  octx.putImageData(imgData, 0, 0);
-}
-
-function applyAngularEdges(imgData, w, h, blockSize, jagged) {
-  const data = imgData.data;
-  const copy = new Uint8ClampedArray(data);
-  const threshold = jagged ? 18 : 26;
-
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const i = (y * w + x) * 4;
-      const gx = Math.abs(copy[i + 4] - copy[i - 4]);
-      const gy = Math.abs(copy[i + w * 4] - copy[i - w * 4]);
-      const edge = gx + gy;
-
-      if (edge > threshold) {
-        const bx = Math.floor(x / blockSize) * blockSize;
-        const by = Math.floor(y / blockSize) * blockSize;
-        const checker = (Math.floor(x / blockSize) + Math.floor(y / blockSize)) % 2;
-        let offset = checker === 0 ? (x - bx) : (blockSize - (x - bx));
-
-        if (jagged) {
-          const wave = ((x * 13 + y * 7) % blockSize) - blockSize / 2;
-          offset = Math.round((offset + wave) / 2) * 2;
-        }
-
-        const targetY = Math.max(0, Math.min(h - 1, by + offset));
-        const ti = (targetY * w + x) * 4;
-        data[i] = copy[ti];
-        data[i + 1] = copy[ti + 1];
-        data[i + 2] = copy[ti + 2];
+function stabilizeRangeSliders(){
+  document.querySelectorAll('input[type="range"]').forEach(range=>{
+    range.addEventListener('pointerdown', e=>{
+      document.body.classList.add('draggingRange');
+      if(range.setPointerCapture){
+        try{ range.setPointerCapture(e.pointerId); }catch(err){}
       }
+    });
+    range.addEventListener('pointerup', e=>{
+      document.body.classList.remove('draggingRange');
+      if(range.releasePointerCapture){
+        try{ range.releasePointerCapture(e.pointerId); }catch(err){}
+      }
+    });
+    range.addEventListener('pointercancel', ()=>{
+      document.body.classList.remove('draggingRange');
+    });
+    range.addEventListener('lostpointercapture', ()=>{
+      document.body.classList.remove('draggingRange');
+    });
+    range.addEventListener('mousedown', e=>e.stopPropagation());
+    range.addEventListener('touchstart', e=>e.stopPropagation(), {passive:true});
+  });
+}
+
+
+function updateLabels(){
+  inputScaleVal.textContent=inputScale.value + '%';
+  rayInputScaleVal.textContent=rayInputScale.value + '%';
+  brightnessVal.textContent=brightness.value;
+  contrastVal.textContent=Number(contrast.value).toFixed(2);
+  blurVal.textContent=blur.value;
+  sharpVal.textContent=sharpness.value;
+  blackVal.textContent=blackCut.value;
+  angularVal.textContent=angularStrength.value;
+  cellVal.textContent=cellSize.value;
+  lineStrengthVal.textContent=lineStrength.value;
+  lineThicknessVal.textContent=lineThickness.value;
+  lineBlurVal.textContent=lineBlur.value;
+  gaussianRadiusVal.textContent=gaussianRadius.value;
+  gaussianOpacityVal.textContent=Number(gaussianOpacity.value).toFixed(2);
+  gaussianPosterizeVal.textContent = gaussianPosterize.value === '0' ? '0단계' : gaussianPosterize.value + '단계';
+  glowRadiusVal.textContent=glowRadius.value;
+  glowStrengthVal.textContent=Number(glowStrength.value).toFixed(2);
+  glowThresholdVal.textContent=glowThreshold.value;
+  glowPosterizeVal.textContent = glowPosterize.value === '0' ? '0단계' : glowPosterize.value + '단계';
+  rayPosterizeVal.textContent = rayPosterize.value === '0' ? '0단계' : rayPosterize.value + '단계';
+  rayLengthVal.textContent=rayLength.value;
+  rayStrengthVal.textContent=Number(rayStrength.value).toFixed(2);
+  raySpreadVal.textContent=raySpread.value;
+  rayBlurVal.textContent=rayBlur.value;
+  rayThresholdVal.textContent=rayThreshold.value;
+  rayAngleVal.textContent=rayAngle.value + '°';
+}
+
+function attachLiveUpdate(ids){
+  ids.forEach(id=>$(id).addEventListener('input',()=>{updateLabels(); if(loadedImage) processAllWithoutRay();}));
+}
+attachLiveUpdate(['inputScale','brightness','contrast','blur','sharpness','blackCut','angularStrength','cellSize','lineStrength','lineThickness','lineBlur','gaussianRadius','gaussianOpacity','gaussianPosterize','glowRadius','glowStrength','glowThreshold','glowPosterize']);
+['sizeSelect','levelsSelect','lineArtMode','gaussianMode','glowMode'].forEach(id=>{
+  $(id).addEventListener('change',()=>{if(loadedImage) processAllWithoutRay();});
+});
+['rayMode','rayQuality'].forEach(id=>{
+  $(id).addEventListener('change',()=>{updateLabels(); rayDirty=true; if(loadedImage) status.textContent='Bright Ray 설정이 변경되었습니다. "Bright Ray 적용" 버튼을 눌러주세요.';});
+});
+['rayInputScale','rayLength','rayStrength','raySpread','rayBlur','rayThreshold','rayAngle','rayPosterize'].forEach(id=>{
+  $(id).addEventListener('input',()=>{updateLabels(); rayDirty=true; if(loadedImage) status.textContent='Bright Ray 설정이 변경되었습니다. "Bright Ray 적용" 버튼을 눌러주세요.';});
+});
+
+fileInput.addEventListener('change',e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const img=new Image();
+  img.onload=()=>{
+    loadedImage=img;
+    applyAutoDemoSettings();
+    processAll();
+    showToast('이미지 로드 완료. 기능 확인용 기본 옵션을 자동 적용했습니다.');
+  };
+  img.src=URL.createObjectURL(file);
+});
+applyRayBtn.addEventListener('click',()=>{
+  if(!loadedImage){showToast('먼저 이미지를 업로드하세요.');return;}
+  setRayApplying(true);
+  showToast('Bright Ray 적용중...');
+  setTimeout(()=>{
+    processRayOnly();
+    setRayApplying(false);
+    showToast('Bright Ray 결과를 갱신했습니다.');
+  },80);
+});
+
+function downloadCanvas(canvasId, filename){
+  const c=$(canvasId); if(!c || !c.width){showToast('다운로드할 이미지가 없습니다.'); return;}
+  const a=document.createElement('a'); a.download=filename; a.href=c.toDataURL('image/png'); a.click(); showToast('PNG 다운로드를 시작했습니다.');
+}
+window.downloadCanvas=downloadCanvas;
+
+function showToast(message){
+  status.textContent=message;
+  toast.textContent=message;
+  toast.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer=setTimeout(()=>toast.classList.remove('show'),1800);
+}
+
+function setRayApplying(isApplying){
+  if(isApplying){
+    applyRayBtn.classList.add('applying');
+    applyRayBtn.textContent='적용중';
+  }else{
+    applyRayBtn.classList.remove('applying');
+    applyRayBtn.textContent='Bright Ray 적용';
+  }
+}
+
+function applyAutoDemoSettings(){
+  // 2. 카툰
+  levelsSelect.value = '3';
+  brightness.value = '50';
+  contrast.value = '1.55';
+  blackCut.value = '40';
+  blur.value = '2';
+  angularStrength.value = '9';
+  cellSize.value = '7';
+
+  // 3. 라인아트
+  lineArtMode.value = 'black';
+  lineStrength.value = '124';
+  lineThickness.value = '1';
+  lineBlur.value = '0';
+
+  // 4. 가우시안 블러
+  gaussianMode.value = 'all';
+  gaussianRadius.value = '20';
+  gaussianOpacity.value = '0.90';
+  gaussianPosterize.value = '0';
+
+  // 5. Glow Spread
+  glowMode.value = 'medium';
+  glowRadius.value = '24';
+  glowStrength.value = '1.35';
+  glowThreshold.value = '50';
+  glowPosterize.value = '0';
+
+  updateLabels();
+}
+
+function focusCanvasView(canvasId){
+  const el=$(canvasId);
+  if(!el) return;
+  const box=el.closest('.canvasBox') || el;
+  box.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function collectSettings(){
+  const fields=[
+    'sizeSelect','inputScale','rayInputScale',
+    'levelsSelect','edgeMode','brightness','contrast','blur','sharpness','blackCut',
+    'angularMode','angularStrength','cellSize','angularDirection',
+    'lineArtMode','lineStrength','lineThickness','lineBlur',
+    'gaussianMode','gaussianRadius','gaussianOpacity','gaussianPosterize',
+    'glowMode','glowRadius','glowStrength','glowThreshold','glowPosterize',
+    'rayMode','rayLength','rayStrength','raySpread','rayBlur','rayThreshold','rayAngle','rayPosterize','rayQuality'
+  ];
+  const s={};
+  fields.forEach(id=>{ if($(id)) s[id]=$(id).value; });
+  return s;
+}
+function applySettings(s){Object.keys(s).forEach(k=>{if($(k)) $(k).value=s[k];});}
+
+
+function getOutputSize(img){const size=sizeSelect.value; if(size==='original') return {w:img.width,h:img.height}; const n=parseInt(size,10); return {w:n,h:n};}
+function createBaseCanvas(img, scaleOverride=null){
+  const {w,h}=getOutputSize(img);
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const ctx=c.getContext('2d');
+  const fitScale=Math.min(w/img.width,h/img.height);
+  const scalePercent = scaleOverride===null ? (parseInt(inputScale.value,10)||100) : (parseInt(scaleOverride,10)||100);
+  const contentScale=scalePercent/100;
+  const finalScale=fitScale*contentScale;
+  const nw=img.width*finalScale,nh=img.height*finalScale,x=(w-nw)/2,y=(h-nh)/2;
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,x,y,nw,nh);
+  return c;
+}
+function cloneImageData(imgData){return new ImageData(new Uint8ClampedArray(imgData.data),imgData.width,imgData.height);}
+function toGrayscale(imgData){
+  const d=imgData.data;
+  for(let i=0;i<d.length;i+=4){const g=Math.round(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114); d[i]=d[i+1]=d[i+2]=g; d[i+3]=255;}
+  return imgData;
+}
+function setCanvasImage(canvas, imgData){canvas.width=imgData.width; canvas.height=imgData.height; canvas.getContext('2d').putImageData(imgData,0,0);}
+function drawCanvasCopy(targetCanvas, sourceCanvas){targetCanvas.width=sourceCanvas.width; targetCanvas.height=sourceCanvas.height; targetCanvas.getContext('2d').drawImage(sourceCanvas,0,0);}
+
+function buildBaseGrayData(scaleOverride=null){
+  const baseCanvas=createBaseCanvas(loadedImage, scaleOverride);
+  const baseCtx=baseCanvas.getContext('2d');
+  const baseColorData=baseCtx.getImageData(0,0,baseCanvas.width,baseCanvas.height);
+  const baseGrayData=toGrayscale(cloneImageData(baseColorData));
+  return {baseCanvas, baseGrayData};
+}
+
+function processAllWithoutRay(){
+  updateLabels();
+  const {baseCanvas, baseGrayData}=buildBaseGrayData();
+  drawCanvasCopy(srcCanvas, baseCanvas);
+  const mainData=createMainResult(baseCanvas.width, baseCanvas.height);
+  setCanvasImage(mainCanvas, mainData);
+  const lineData=createLineArtResult(cloneImageData(baseGrayData));
+  setCanvasImage(lineCanvas, lineData);
+  const gaussianData=createGaussianResult(cloneImageData(baseGrayData));
+  setCanvasImage(gaussianCanvasView, gaussianData);
+  const glowData=createGlowResult(cloneImageData(baseGrayData));
+  setCanvasImage(glowCanvasView, glowData);
+  rayDirty=true;
+}
+
+function processRayOnly(){
+  updateLabels();
+  const {baseCanvas, baseGrayData}=buildBaseGrayData(rayInputScale.value);
+  if(!srcCanvas.width) drawCanvasCopy(srcCanvas, baseCanvas);
+  const rayData=createRayResult(cloneImageData(baseGrayData));
+  setCanvasImage(rayCanvasView, rayData);
+  rayDirty=false;
+}
+
+function processAll(){
+  processAllWithoutRay();
+  processRayOnly();
+}
+
+function createMainResult(w,h){
+  const temp=createBaseCanvas(loadedImage);
+  const tctx=temp.getContext('2d');
+  const blurRadius=parseInt(blur.value,10);
+  if(blurRadius>0){
+    const raw=createBaseCanvas(loadedImage);
+    tctx.clearRect(0,0,w,h);
+    tctx.filter=`blur(${blurRadius}px)`; tctx.drawImage(raw,0,0); tctx.filter='none';
+  }
+  let data=tctx.getImageData(0,0,w,h);
+  toGrayscale(data);
+  applyTone(data);
+  if(angularMode.value!=='off') applyAngularize(data,w,h);
+  if(edgeMode.value!=='smooth') applyAngularEdges(data,w,h,parseInt(sharpness.value,10),edgeMode.value==='jagged');
+  return data;
+}
+function createLineArtResult(imgData){
+  if(lineArtMode.value==='off') return imgData;
+  applyLineArt(imgData,imgData.width,imgData.height);
+  const blurRadius=parseInt(lineBlur.value,10);
+  if(blurRadius>0) imgData=applyLineArtBlur(imgData,imgData.width,imgData.height,blurRadius);
+  return imgData;
+}
+function createGaussianResult(imgData){
+  if(gaussianMode.value==='off') return imgData;
+  let out=applyGaussianCanvas(imgData,imgData.width,imgData.height);
+  applyToneToExisting(out, parseInt(gaussianPosterize.value,10));
+  return out;
+}
+function createGlowResult(imgData){
+  if(glowMode.value==='off') return imgData;
+  let out=applyGlowSpread(imgData,imgData.width,imgData.height);
+  applyToneToExisting(out, parseInt(glowPosterize.value,10));
+  return out;
+}
+function createRayResult(imgData){
+  if(rayMode.value==='off') return imgData;
+  let out=applyBrightRay(imgData,imgData.width,imgData.height);
+  applyToneToExisting(out, parseInt(rayPosterize.value,10));
+  return out;
+}
+
+function applyTone(imgData){
+  const data=imgData.data,levels=parseInt(levelsSelect.value,10),brightnessValue=parseInt(brightness.value,10),contrastValue=parseFloat(contrast.value),cut=parseInt(blackCut.value,10);
+  for(let i=0;i<data.length;i+=4){
+    let gray=data[i];
+    gray+=brightnessValue; gray=((gray-128)*contrastValue)+128; gray=Math.max(0,Math.min(255,gray)); if(gray<cut) gray=0;
+    let stepped; if(levels<=1) stepped=gray>=128?255:0; else {const step=Math.round(gray/(255/(levels-1))); stepped=Math.round(step*(255/(levels-1)));}
+    data[i]=data[i+1]=data[i+2]=stepped; data[i+3]=255;
+  }
+}
+function applyToneToExisting(imgData, levelsOverride=null){
+  const data=imgData.data,levels=(levelsOverride===null?parseInt(levelsSelect.value,10):parseInt(levelsOverride,10));
+  if(!levels || levels<=0) return;
+  for(let i=0;i<data.length;i+=4){const gray=data[i]; let stepped; if(levels<=1) stepped=gray>=128?255:0; else {const step=Math.round(gray/(255/(levels-1))); stepped=Math.round(step*(255/(levels-1)));} data[i]=data[i+1]=data[i+2]=stepped; data[i+3]=255;}
+}
+
+function applyAngularEdges(imgData,w,h,blockSize,jagged){
+  const data=imgData.data,copy=new Uint8ClampedArray(data),threshold=jagged?18:26;
+  for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){
+    const i=(y*w+x)*4,gx=Math.abs(copy[i+4]-copy[i-4]),gy=Math.abs(copy[i+w*4]-copy[i-w*4]),edge=gx+gy;
+    if(edge>threshold){
+      const bx=Math.floor(x/blockSize)*blockSize,by=Math.floor(y/blockSize)*blockSize,checker=(Math.floor(x/blockSize)+Math.floor(y/blockSize))%2;
+      let offset=checker===0?(x-bx):(blockSize-(x-bx));
+      if(jagged){const wave=((x*13+y*7)%blockSize)-blockSize/2; offset=Math.round((offset+wave)/2)*2;}
+      const targetY=Math.max(0,Math.min(h-1,by+offset)),ti=(targetY*w+x)*4;
+      data[i]=copy[ti]; data[i+1]=copy[ti+1]; data[i+2]=copy[ti+2];
+    }
+  }
+}
+function applyAngularize(imgData,w,h){
+  const data=imgData.data,copy=new Uint8ClampedArray(data),mode=angularMode.value,strength=parseInt(angularStrength.value,10),cell=parseInt(cellSize.value,10),direction=angularDirection.value;
+  let modeMul=1; if(mode==='mild') modeMul=.45; if(mode==='medium') modeMul=.85; if(mode==='strong') modeMul=1.25; if(mode==='lowpoly') modeMul=1.5;
+  const amp=Math.round(strength*modeMul); if(amp<=0) return;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i=(y*w+x)*4,bx=Math.floor(x/cell),by=Math.floor(y/cell),lx=x%cell,ly=y%cell; let sx=x,sy=y;
+    if(direction==='vertical'){const zig=((by%2===0)?lx:(cell-lx))/cell-.5; sx=x+Math.round(zig*amp);}
+    else if(direction==='horizontal'){const zig=((bx%2===0)?ly:(cell-ly))/cell-.5; sy=y+Math.round(zig*amp);}
+    else if(direction==='diagonal'){const zigX=(((bx+by)%2===0)?lx:(cell-lx))/cell-.5,zigY=(((bx-by)%2===0)?ly:(cell-ly))/cell-.5; sx=x+Math.round(zigX*amp); sy=y+Math.round(zigY*amp);}
+    else if(direction==='random'){const seed=pseudoRandom(bx,by),seed2=pseudoRandom(by,bx+17); sx=x+Math.round((seed-.5)*amp); sy=y+Math.round((seed2-.5)*amp);}
+    if(mode==='lowpoly'){const tri=(lx+ly<cell); if(tri){sx=Math.floor((x+Math.floor(bx*cell))/2); sy=Math.floor((y+Math.floor(by*cell))/2);} else {sx=Math.floor((x+Math.floor((bx+1)*cell))/2); sy=Math.floor((y+Math.floor((by+1)*cell))/2);}}
+    sx=Math.max(0,Math.min(w-1,sx)); sy=Math.max(0,Math.min(h-1,sy)); const si=(sy*w+sx)*4;
+    data[i]=copy[si]; data[i+1]=copy[si+1]; data[i+2]=copy[si+2]; data[i+3]=255;
+  }
+}
+
+function applyLineArt(imgData,w,h){
+  const mode=lineArtMode.value,data=imgData.data,copy=new Uint8ClampedArray(data),threshold=parseInt(lineStrength.value,10),thick=parseInt(lineThickness.value,10);
+  const edgeMap=new Uint8Array(w*h);
+  for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){
+    const i=(y*w+x)*4,gx=Math.abs(copy[i+4]-copy[i-4]),gy=Math.abs(copy[i+w*4]-copy[i-w*4]);
+    if(gx+gy>threshold) edgeMap[y*w+x]=1;
+  }
+  if(mode==='only'){for(let i=0;i<data.length;i+=4){data[i]=data[i+1]=data[i+2]=0;data[i+3]=255;}}
+  let val=0; if(mode==='white'||mode==='only') val=255; if(mode==='gray') val=128;
+  if(thick<=0) return;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    if(!edgeMap[y*w+x]) continue;
+    for(let oy=-thick+1;oy<thick;oy++) for(let ox=-thick+1;ox<thick;ox++){
+      const nx=x+ox,ny=y+oy; if(nx<0||ny<0||nx>=w||ny>=h) continue;
+      const ni=(ny*w+nx)*4; data[ni]=data[ni+1]=data[ni+2]=val; data[ni+3]=255;
     }
   }
 }
 
+function applyLineArtBlur(imgData,w,h,radius){
+  const base=document.createElement('canvas');
+  base.width=w; base.height=h;
+  base.getContext('2d').putImageData(imgData,0,0);
+
+  const blurCanvas=document.createElement('canvas');
+  blurCanvas.width=w; blurCanvas.height=h;
+  const bctx=blurCanvas.getContext('2d');
+  bctx.filter=`blur(${radius}px)`;
+  bctx.drawImage(base,0,0);
+  bctx.filter='none';
+
+  const blurred=bctx.getImageData(0,0,w,h);
+  const out=new ImageData(new Uint8ClampedArray(imgData.data),w,h);
+  const d=out.data,bd=blurred.data,od=imgData.data;
+  const mix=Math.min(0.85,0.20 + radius*0.05);
+
+  for(let i=0;i<d.length;i+=4){
+    const v=Math.round(od[i]*(1-mix)+bd[i]*mix);
+    d[i]=d[i+1]=d[i+2]=v;
+    d[i+3]=255;
+  }
+  return out;
+}
+
+function applyGaussianCanvas(imgData,w,h){
+  const radius=parseInt(gaussianRadius.value,10),opacity=parseFloat(gaussianOpacity.value),mode=gaussianMode.value;
+  const base=document.createElement('canvas'); base.width=w; base.height=h; base.getContext('2d').putImageData(imgData,0,0);
+  const blurC=document.createElement('canvas'); blurC.width=w; blurC.height=h; const bctx=blurC.getContext('2d');
+  bctx.filter=`blur(${radius}px)`; bctx.drawImage(base,0,0); bctx.filter='none';
+  const blurred=bctx.getImageData(0,0,w,h),out=new ImageData(new Uint8ClampedArray(imgData.data),w,h);
+  const d=out.data,bd=blurred.data,od=imgData.data;
+  for(let i=0;i<d.length;i+=4){
+    const gray=od[i]; let mask=1; if(mode==='bright') mask=gray/255; if(mode==='dark') mask=1-gray/255;
+    const a=opacity*mask; d[i]=Math.round(od[i]*(1-a)+bd[i]*a); d[i+1]=d[i]; d[i+2]=d[i]; d[i+3]=255;
+  }
+  return out;
+}
+
+function applyGlowSpread(imgData,w,h){
+  const mode=glowMode.value,radius=parseInt(glowRadius.value,10),strength=parseFloat(glowStrength.value),threshold=parseInt(glowThreshold.value,10);
+  const source=new ImageData(new Uint8ClampedArray(imgData.data),w,h);
+  const maskCanvas=document.createElement('canvas'); maskCanvas.width=w; maskCanvas.height=h; const mctx=maskCanvas.getContext('2d');
+  const mask=mctx.createImageData(w,h);
+  for(let i=0;i<source.data.length;i+=4){const g=source.data[i]; let v=0; if(g>=threshold) v=Math.min(255,(g-threshold)/(255-threshold||1)*255); mask.data[i]=mask.data[i+1]=mask.data[i+2]=v; mask.data[i+3]=255;}
+  mctx.putImageData(mask,0,0);
+  const blurCanvas=document.createElement('canvas'); blurCanvas.width=w; blurCanvas.height=h; const bctx=blurCanvas.getContext('2d');
+  bctx.filter=`blur(${radius}px)`; bctx.drawImage(maskCanvas,0,0); bctx.filter='none';
+  const glow=bctx.getImageData(0,0,w,h); const out=new ImageData(new Uint8ClampedArray(source.data),w,h); const d=out.data,gd=glow.data;
+  let mul=1; if(mode==='soft') mul=.65; if(mode==='medium') mul=1.0; if(mode==='strong') mul=1.45; if(mode==='toon') mul=1.15;
+  for(let i=0;i<d.length;i+=4){let add=gd[i]*strength*mul; let v=Math.min(255,d[i]+add); if(mode==='toon'){if(v>220) v=255; else if(v>170) v=210; else if(v>110) v=150;} d[i]=d[i+1]=d[i+2]=Math.round(v); d[i+3]=255;}
+  return out;
+}
+
+function applyBrightRay(imgData,w,h){
+  const mode=rayMode.value; if(mode==='off') return imgData;
+  const threshold=parseInt(rayThreshold.value,10),length=parseInt(rayLength.value,10),strength=parseFloat(rayStrength.value),spread=parseInt(raySpread.value,10),blurAmt=parseInt(rayBlur.value,10),angleDeg=parseInt(rayAngle.value,10),quality=rayQuality.value;
+
+  let step=2.5;
+  let scale=0.75;
+  if(quality==='fast'){ step=4.0; scale=0.5; }
+  else if(quality==='normal'){ step=2.5; scale=0.75; }
+  else if(quality==='high'){ step=1.5; scale=1.0; }
+
+  const rw=Math.max(32, Math.round(w*scale));
+  const rh=Math.max(32, Math.round(h*scale));
+  const smallCanvas=document.createElement('canvas'); smallCanvas.width=rw; smallCanvas.height=rh;
+  const sctx=smallCanvas.getContext('2d');
+  const fullCanvas=document.createElement('canvas'); fullCanvas.width=w; fullCanvas.height=h;
+  fullCanvas.getContext('2d').putImageData(imgData,0,0);
+  sctx.drawImage(fullCanvas,0,0,rw,rh);
+  const smallData=sctx.getImageData(0,0,rw,rh);
+
+  const sLength=Math.max(6, Math.round(length*scale));
+  const sSpread=Math.max(0, Math.round(spread*scale));
+  const sBlur=Math.max(0, blurAmt*scale);
+
+  const source=new Uint8ClampedArray(smallData.data);
+  const mask=new Float32Array(rw*rh);
+  for(let i=0,p=0;i<source.length;i+=4,p++){
+    const g=source[i]; if(g>=threshold) mask[p]=(g-threshold)/(255-threshold||1);
+  }
+  const out=new Float32Array(rw*rh);
+  const cx=rw/2,cy=rh/2;
+  for(let y=0;y<rh;y++){
+    for(let x=0;x<rw;x++){
+      let dx=0,dy=0;
+      if(mode==='radial'){dx=x-cx; dy=y-cy; const mag=Math.hypot(dx,dy)||1; dx/=mag; dy/=mag;}
+      else if(mode==='down'){dx=0; dy=1;}
+      else if(mode==='up'){dx=0; dy=-1;}
+      else if(mode==='right'){dx=1; dy=0;}
+      else if(mode==='left'){dx=-1; dy=0;}
+      else if(mode==='angle'){const a=angleDeg*Math.PI/180; dx=Math.cos(a); dy=Math.sin(a);}      
+      let sum=0; const px=-dy,py=dx;
+      for(let off=-sSpread; off<=sSpread; off++){
+        let t=0,local=0;
+        while(t<=sLength){
+          const sx=Math.round(x - dx*t + px*off), sy=Math.round(y - dy*t + py*off);
+          if(sx<0||sy<0||sx>=rw||sy>=rh) break;
+          const v=mask[sy*rw+sx]; if(v>0){const fall=(1-(t/sLength)); local += v*fall*fall;}
+          t+=step;
+        }
+        sum+=local;
+      }
+      out[y*rw+x]=sum;
+    }
+  }
+  let max=0; for(let i=0;i<out.length;i++) if(out[i]>max) max=out[i]; if(max<=0) return imgData;
+  const smallRes=new ImageData(new Uint8ClampedArray(smallData.data),rw,rh); const d=smallRes.data;
+  for(let p=0,i=0;p<out.length;p++,i+=4){const add=(out[p]/max)*255*strength; const v=Math.min(255,d[i]+add); d[i]=d[i+1]=d[i+2]=Math.round(v); d[i+3]=255;}
+  if(sBlur>0){
+    const c=document.createElement('canvas'); c.width=rw; c.height=rh; c.getContext('2d').putImageData(smallRes,0,0);
+    const bc=document.createElement('canvas'); bc.width=rw; bc.height=rh; const bctx=bc.getContext('2d');
+    bctx.filter=`blur(${sBlur}px)`; bctx.drawImage(c,0,0); bctx.filter='none';
+    const blurred=bctx.getImageData(0,0,rw,rh); const bd=blurred.data;
+    for(let i=0;i<d.length;i+=4){d[i]=Math.max(d[i], Math.round(d[i]*0.55 + bd[i]*0.45)); d[i+1]=d[i+2]=d[i]; d[i+3]=255;}
+  }
+  const upscaleCanvas=document.createElement('canvas'); upscaleCanvas.width=rw; upscaleCanvas.height=rh;
+  upscaleCanvas.getContext('2d').putImageData(smallRes,0,0);
+  const finalCanvas=document.createElement('canvas'); finalCanvas.width=w; finalCanvas.height=h;
+  const fctx=finalCanvas.getContext('2d');
+  fctx.imageSmoothingEnabled=true;
+  fctx.drawImage(upscaleCanvas,0,0,w,h);
+  return fctx.getImageData(0,0,w,h);
+}
+
+function pseudoRandom(a,b){const x=Math.sin(a*127.1+b*311.7)*43758.5453123; return x-Math.floor(x);} 
 updateLabels();
+stabilizeRangeSliders();
 </script>
 </body>
 </html>
