@@ -14,7 +14,7 @@ h1{margin:0 0 6px;font-size:26px}.desc{margin:0;color:#aaa;font-size:14px}
 .badge{border:1px solid #555;color:#bbb;padding:8px 12px;border-radius:999px;font-size:12px;white-space:nowrap}
 .app{display:grid;grid-template-columns:380px 1fr;gap:20px;min-width:0}.app > *{min-width:0}
 .panel,.viewer{background:rgba(26,26,26,.95);border:1px solid #333;border-radius:20px;box-shadow:0 18px 45px rgba(0,0,0,.35)}
-.panel{padding:18px;max-height:calc(100vh - 120px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}.viewer{padding:16px;overflow-x:hidden}
+.panel{padding:18px;max-height:calc(100vh - 120px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}.viewer{padding:16px;max-height:calc(100vh - 120px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
 .sectionTitle{font-size:16px;color:#ffd84a;margin:26px 0 12px;padding-top:16px;border-top:5px double #555;font-weight:900;letter-spacing:.02em;text-shadow:0 0 10px rgba(255,216,74,.35)}
 .sectionTitle:first-child{border-top:0;padding-top:0;margin-top:0}
 label{display:block;font-size:12px;color:#cfcfcf;margin:12px 0 6px}
@@ -31,6 +31,13 @@ canvas{width:100%;height:auto;display:block;background:#000;border-radius:12px}
 .status{margin-top:12px;padding:10px 12px;border-radius:12px;background:#111;border:1px solid #333;color:#aaa;font-size:12px;line-height:1.45}
 .hint{margin-top:14px;color:#888;font-size:12px;line-height:1.55}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#eee;color:#111;border:1px solid #fff;border-radius:999px;padding:12px 18px;font-size:13px;font-weight:800;box-shadow:0 16px 35px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;z-index:9999}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.rayActionWrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}.rayActionWrap select,.rayActionWrap button{height:46px;min-height:46px;margin-top:0;width:100%}#applyRayBtn.applying{position:relative;border-color:#ffd84a;box-shadow:0 0 0 2px rgba(255,216,74,.25),0 0 22px rgba(255,216,74,.65);overflow:hidden}#applyRayBtn.applying::after{content:'';position:absolute;inset:-3px;background:linear-gradient(90deg,transparent,rgba(255,216,74,.55),transparent);animation:raySweep .9s linear infinite;pointer-events:none}@keyframes raySweep{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+
+.panel::-webkit-scrollbar,.viewer::-webkit-scrollbar{width:14px}
+.panel::-webkit-scrollbar-track,.viewer::-webkit-scrollbar-track{background:#f1f1f1;border-radius:999px}
+.panel::-webkit-scrollbar-thumb,.viewer::-webkit-scrollbar-thumb{background:#888;border-radius:999px;border:3px solid #f1f1f1}
+.panel::-webkit-scrollbar-thumb:hover,.viewer::-webkit-scrollbar-thumb:hover{background:#aaa}
+.panel,.viewer{scrollbar-width:auto;scrollbar-color:#888 #f1f1f1}
+
 @media (orientation: portrait){.resultsGrid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:980px){.app{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.panel{max-height:none}}
 @media(max-width:640px) and (orientation: portrait){.resultsGrid{grid-template-columns:repeat(2,minmax(0,1fr));}.canvasBox{min-height:220px}}
@@ -217,8 +224,58 @@ canvas{width:100%;height:auto;display:block;background:#000;border-radius:12px}
   <div class="row"><span>0단계</span><span id="rayPosterizeVal">0단계</span><span>8단계</span></div>
   <input id="rayPosterize" type="range" min="0" max="8" step="1" value="0" />
 
-  <div id="status" class="status">1. 이미지 설정은 결과 영역 첫 번째 카드에서 조절합니다. 이미지를 업로드하면 2~5번 기능 확인용 기본 옵션이 자동 적용됩니다.</div>
-  <div class="hint">중요: 3~6번 결과는 서로 섞이지 않고, 업로드한 이미지에 각 효과만 따로 적용됩니다. Bright Ray 설정을 바꾼 뒤에는 "Bright Ray 적용" 버튼을 눌러 갱신하세요.</div>
+
+  <div class="sectionTitle">7. Depth Map</div>
+  <label>Depth Map</label>
+  <select id="depthMode">
+    <option value="front" selected>밝은 부분 앞으로</option>
+    <option value="reverse">어두운 부분 앞으로</option>
+    <option value="off">끄기</option>
+  </select>
+
+  <label>깊이 강도</label>
+  <div class="row"><span>약함</span><span id="depthStrengthVal">1.35</span><span>강함</span></div>
+  <input id="depthStrength" type="range" min="0.2" max="3.0" step="0.05" value="1.35" />
+
+  <label>볼륨감</label>
+  <div class="row"><span>평평</span><span id="depthVolumeVal">68</span><span>입체감</span></div>
+  <input id="depthVolume" type="range" min="0" max="100" step="1" value="68" />
+
+  <label>디테일 반영</label>
+  <div class="row"><span>약함</span><span id="depthDetailVal">42</span><span>강함</span></div>
+  <input id="depthDetail" type="range" min="0" max="100" step="1" value="42" />
+
+  <label>배경 분리 기준값</label>
+  <div class="row"><span>약함</span><span id="depthThresholdVal">24</span><span>강함</span></div>
+  <input id="depthThreshold" type="range" min="0" max="80" step="1" value="24" />
+
+  <label>Depth 블러</label>
+  <div class="row"><span>선명</span><span id="depthBlurVal">2</span><span>부드럽게</span></div>
+  <input id="depthBlur" type="range" min="0" max="12" step="1" value="2" />
+
+  <div class="sectionTitle">8. Normal Map</div>
+  <label>Normal Map</label>
+  <select id="normalMode">
+    <option value="opengl" selected>OpenGL (Y+)</option>
+    <option value="directx">DirectX (Y-)</option>
+    <option value="off">끄기</option>
+  </select>
+
+  <label>노말 강도</label>
+  <div class="row"><span>약함</span><span id="normalStrengthVal">2.40</span><span>강함</span></div>
+  <input id="normalStrength" type="range" min="0.2" max="8.0" step="0.1" value="2.4" />
+
+  <label>표면 디테일 크기</label>
+  <div class="row"><span>세밀</span><span id="normalDetailVal">1</span><span>굵게</span></div>
+  <input id="normalDetail" type="range" min="1" max="6" step="1" value="1" />
+
+  <label>Normal 블러</label>
+  <div class="row"><span>선명</span><span id="normalBlurVal">1</span><span>부드럽게</span></div>
+  <input id="normalBlur" type="range" min="0" max="8" step="1" value="1" />
+
+
+  <div id="status" class="status">1. 이미지 설정은 결과 영역 첫 번째 카드에서 조절합니다. 이미지를 업로드하면 2~8번 기능을 바로 확인할 수 있도록 기본 옵션이 자동 적용됩니다.</div>
+  <div class="hint">중요: 3~8번 결과는 서로 섞이지 않고, 업로드한 이미지에 각 효과만 따로 적용됩니다. Bright Ray 설정을 바꾼 뒤에는 "Bright Ray 적용" 버튼을 눌러 갱신하세요.</div>
 </aside>
 
 <main class="viewer">
@@ -270,6 +327,18 @@ canvas{width:100%;height:auto;display:block;background:#000;border-radius:12px}
       <canvas id="rayCanvasView"></canvas>
       <button class="small" onclick="downloadCanvas('rayCanvasView','bright-ray-result.png')">Bright Ray 다운로드</button>
     </div>
+    <div class="canvasBox">
+      <h2>7. Depth Map 변환 결과</h2>
+      <p>7. 배경을 정리하고 오브젝트 형태와 깊이감만 표현</p>
+      <canvas id="depthCanvasView"></canvas>
+      <button class="small" onclick="downloadCanvas('depthCanvasView','depth-map-result.png')">Depth Map 다운로드</button>
+    </div>
+    <div class="canvasBox">
+      <h2>8. Normal Map 변환 결과</h2>
+      <p>8. Depth 옵션과 분리된 독립 Normal Map</p>
+      <canvas id="normalCanvasView"></canvas>
+      <button class="small" onclick="downloadCanvas('normalCanvasView','normal-map-result.png')">Normal Map 다운로드</button>
+    </div>
   </div>
 </main>
 </div>
@@ -279,9 +348,9 @@ canvas{width:100%;height:auto;display:block;background:#000;border-radius:12px}
 
 <script>
 const $=id=>document.getElementById(id);
-const ids=['fileInput','srcCanvas','mainCanvas','lineCanvas','gaussianCanvasView','glowCanvasView','rayCanvasView','sizeSelect','inputScale','rayInputScale','levelsSelect','edgeMode','brightness','contrast','blur','sharpness','blackCut','angularMode','angularStrength','cellSize','angularDirection','lineArtMode','lineStrength','lineThickness','lineBlur','gaussianMode','gaussianRadius','gaussianOpacity','gaussianPosterize','gaussianPosterize','glowMode','glowRadius','glowStrength','glowThreshold','glowPosterize','rayInputScale','rayQuality','applyRayBtn','rayMode','rayLength','rayStrength','raySpread','rayBlur','rayThreshold','rayAngle','rayPosterize','status','toast'];
+const ids=['fileInput','srcCanvas','mainCanvas','lineCanvas','gaussianCanvasView','glowCanvasView','rayCanvasView','depthCanvasView','normalCanvasView','sizeSelect','inputScale','rayInputScale','levelsSelect','edgeMode','brightness','contrast','blur','sharpness','blackCut','angularMode','angularStrength','cellSize','angularDirection','lineArtMode','lineStrength','lineThickness','lineBlur','gaussianMode','gaussianRadius','gaussianOpacity','gaussianPosterize','gaussianPosterize','glowMode','glowRadius','glowStrength','glowThreshold','glowPosterize','rayInputScale','rayQuality','applyRayBtn','rayMode','rayLength','rayStrength','raySpread','rayBlur','rayThreshold','rayAngle','rayPosterize','depthMode','depthStrength','depthVolume','depthDetail','depthThreshold','depthBlur','normalMode','normalStrength','normalDetail','normalBlur','status','toast'];
 ids.forEach(id=>window[id]=$(id));
-const vals=['inputScaleVal','rayInputScaleVal','brightnessVal','contrastVal','blurVal','sharpVal','blackVal','angularVal','cellVal','lineStrengthVal','lineThicknessVal','lineBlurVal','gaussianRadiusVal','gaussianOpacityVal','gaussianPosterizeVal','glowRadiusVal','glowStrengthVal','glowThresholdVal','glowPosterizeVal','rayPosterizeVal','rayLengthVal','rayStrengthVal','raySpreadVal','rayBlurVal','rayThresholdVal','rayAngleVal'];
+const vals=['inputScaleVal','rayInputScaleVal','brightnessVal','contrastVal','blurVal','sharpVal','blackVal','angularVal','cellVal','lineStrengthVal','lineThicknessVal','lineBlurVal','gaussianRadiusVal','gaussianOpacityVal','gaussianPosterizeVal','glowRadiusVal','glowStrengthVal','glowThresholdVal','glowPosterizeVal','rayPosterizeVal','rayLengthVal','rayStrengthVal','raySpreadVal','rayBlurVal','rayThresholdVal','rayAngleVal','depthStrengthVal','depthVolumeVal','depthDetailVal','depthThresholdVal','depthBlurVal','normalStrengthVal','normalDetailVal','normalBlurVal'];
 vals.forEach(id=>window[id]=$(id));
 let loadedImage=null;
 let rayDirty=false;
@@ -339,13 +408,21 @@ function updateLabels(){
   rayBlurVal.textContent=rayBlur.value;
   rayThresholdVal.textContent=rayThreshold.value;
   rayAngleVal.textContent=rayAngle.value + '°';
+  depthStrengthVal.textContent=Number(depthStrength.value).toFixed(2);
+  depthVolumeVal.textContent=depthVolume.value;
+  depthDetailVal.textContent=depthDetail.value;
+  depthThresholdVal.textContent=depthThreshold.value;
+  depthBlurVal.textContent=depthBlur.value;
+  normalStrengthVal.textContent=Number(normalStrength.value).toFixed(2);
+  normalDetailVal.textContent=normalDetail.value;
+  normalBlurVal.textContent=normalBlur.value;
 }
 
 function attachLiveUpdate(ids){
   ids.forEach(id=>$(id).addEventListener('input',()=>{updateLabels(); if(loadedImage) processAllWithoutRay();}));
 }
-attachLiveUpdate(['inputScale','brightness','contrast','blur','sharpness','blackCut','angularStrength','cellSize','lineStrength','lineThickness','lineBlur','gaussianRadius','gaussianOpacity','gaussianPosterize','glowRadius','glowStrength','glowThreshold','glowPosterize']);
-['sizeSelect','levelsSelect','lineArtMode','gaussianMode','glowMode'].forEach(id=>{
+attachLiveUpdate(['inputScale','brightness','contrast','blur','sharpness','blackCut','angularStrength','cellSize','lineStrength','lineThickness','lineBlur','gaussianRadius','gaussianOpacity','gaussianPosterize','glowRadius','glowStrength','glowThreshold','glowPosterize','depthStrength','depthVolume','depthDetail','depthThreshold','depthBlur','normalStrength','normalDetail','normalBlur']);
+['sizeSelect','levelsSelect','lineArtMode','gaussianMode','glowMode','depthMode','normalMode'].forEach(id=>{
   $(id).addEventListener('change',()=>{if(loadedImage) processAllWithoutRay();});
 });
 ['rayMode','rayQuality'].forEach(id=>{
@@ -430,6 +507,20 @@ function applyAutoDemoSettings(){
   glowThreshold.value = '50';
   glowPosterize.value = '0';
 
+  // 7. Depth Map
+  depthMode.value = 'front';
+  depthStrength.value = '1.35';
+  depthVolume.value = '68';
+  depthDetail.value = '42';
+  depthThreshold.value = '24';
+  depthBlur.value = '2';
+
+  // 8. Normal Map
+  normalMode.value = 'opengl';
+  normalStrength.value = '2.4';
+  normalDetail.value = '1';
+  normalBlur.value = '1';
+
   updateLabels();
 }
 
@@ -448,7 +539,9 @@ function collectSettings(){
     'lineArtMode','lineStrength','lineThickness','lineBlur',
     'gaussianMode','gaussianRadius','gaussianOpacity','gaussianPosterize',
     'glowMode','glowRadius','glowStrength','glowThreshold','glowPosterize',
-    'rayMode','rayLength','rayStrength','raySpread','rayBlur','rayThreshold','rayAngle','rayPosterize','rayQuality'
+    'rayMode','rayLength','rayStrength','raySpread','rayBlur','rayThreshold','rayAngle','rayPosterize','rayQuality',
+    'depthMode','depthStrength','depthVolume','depthDetail','depthThreshold','depthBlur',
+    'normalMode','normalStrength','normalDetail','normalBlur'
   ];
   const s={};
   fields.forEach(id=>{ if($(id)) s[id]=$(id).value; });
@@ -484,12 +577,12 @@ function buildBaseGrayData(scaleOverride=null){
   const baseCtx=baseCanvas.getContext('2d');
   const baseColorData=baseCtx.getImageData(0,0,baseCanvas.width,baseCanvas.height);
   const baseGrayData=toGrayscale(cloneImageData(baseColorData));
-  return {baseCanvas, baseGrayData};
+  return {baseCanvas, baseColorData, baseGrayData};
 }
 
 function processAllWithoutRay(){
   updateLabels();
-  const {baseCanvas, baseGrayData}=buildBaseGrayData();
+  const {baseCanvas, baseColorData, baseGrayData}=buildBaseGrayData();
   drawCanvasCopy(srcCanvas, baseCanvas);
   const mainData=createMainResult(baseCanvas.width, baseCanvas.height);
   setCanvasImage(mainCanvas, mainData);
@@ -499,6 +592,10 @@ function processAllWithoutRay(){
   setCanvasImage(gaussianCanvasView, gaussianData);
   const glowData=createGlowResult(cloneImageData(baseGrayData));
   setCanvasImage(glowCanvasView, glowData);
+  const depthData=createDepthResult(cloneImageData(baseColorData), cloneImageData(baseGrayData));
+  setCanvasImage(depthCanvasView, depthData);
+  const normalData=createNormalResult(cloneImageData(baseColorData), cloneImageData(baseGrayData));
+  setCanvasImage(normalCanvasView, normalData);
   rayDirty=true;
 }
 
@@ -746,6 +843,170 @@ function applyBrightRay(imgData,w,h){
   fctx.drawImage(upscaleCanvas,0,0,w,h);
   return fctx.getImageData(0,0,w,h);
 }
+
+
+
+function createDepthResult(colorData, grayData){
+  if(depthMode.value==='off') return grayData;
+  return generateDepthMap(colorData, grayData, {
+    mode: depthMode.value,
+    strength: parseFloat(depthStrength.value),
+    volume: parseInt(depthVolume.value,10)/100,
+    detail: parseInt(depthDetail.value,10)/100,
+    threshold: parseInt(depthThreshold.value,10),
+    blur: parseInt(depthBlur.value,10)
+  }).imageData;
+}
+
+function createNormalResult(colorData, grayData){
+  if(normalMode.value==='off'){
+    const out=new ImageData(new Uint8ClampedArray(grayData.data), grayData.width, grayData.height);
+    return out;
+  }
+
+  // Normal Map은 Depth Map 옵션과 분리합니다.
+  // Depth Map 슬라이더를 조절해도 Normal Map은 영향을 받지 않고,
+  // Normal Map 전용 옵션만 반영됩니다.
+  const normalHeightCore = generateDepthMap(colorData, grayData, {
+    mode: 'front',
+    strength: 1.35,
+    volume: 0.68,
+    detail: 0.42,
+    threshold: 24,
+    blur: 2
+  });
+
+  return buildNormalFromHeight(normalHeightCore.height, normalHeightCore.mask, grayData.width, grayData.height, {
+    mode: normalMode.value,
+    strength: parseFloat(normalStrength.value),
+    radius: parseInt(normalDetail.value,10),
+    blur: parseInt(normalBlur.value,10)
+  });
+}
+
+function generateDepthMap(colorData, grayData, options={}){
+  const w=grayData.width,h=grayData.height;
+  const gray=grayData.data, color=colorData.data;
+  const mode=options.mode || 'front';
+  const strength=options.strength || 1;
+  const volumeWeight=('volume' in options)?options.volume:0.65;
+  const detailWeight=('detail' in options)?options.detail:0.35;
+  const threshold=('threshold' in options)?options.threshold:24;
+  const blur=('blur' in options)?options.blur:2;
+  const mask=buildForegroundMask(color,w,h,threshold);
+  const volume=blurFloatMask(mask,w,h,Math.max(14, Math.round(Math.min(w,h)*0.06)));
+  const height=new Float32Array(w*h);
+  let minV=1e9,maxV=-1e9;
+  for(let p=0,i=0;p<height.length;p++,i+=4){
+    let g=gray[i]/255;
+    if(mode==='reverse') g=1-g;
+    let v=(g*detailWeight + volume[p]*volumeWeight);
+    v*=Math.max(0.1,strength);
+    v=clamp(v,0,1);
+    v*=mask[p];
+    height[p]=v;
+    if(mask[p]>0.02){ if(v<minV) minV=v; if(v>maxV) maxV=v; }
+  }
+  if(!isFinite(minV) || !isFinite(maxV) || maxV-minV<1e-5){ minV=0; maxV=1; }
+  for(let p=0;p<height.length;p++){
+    if(mask[p]<=0.02){ height[p]=0; continue; }
+    height[p]=clamp((height[p]-minV)/Math.max(1e-5,maxV-minV),0,1) * mask[p];
+  }
+  let finalHeight = height;
+  if(blur>0) finalHeight = blurFloatMask(height,w,h,blur);
+  const out=new ImageData(w,h);
+  for(let p=0,i=0;p<finalHeight.length;p++,i+=4){
+    const v=Math.round(clamp(finalHeight[p],0,1)*255);
+    out.data[i]=out.data[i+1]=out.data[i+2]=v;
+    out.data[i+3]=255;
+  }
+  return {imageData: out, height: finalHeight, mask};
+}
+
+function buildForegroundMask(color,w,h,threshold){
+  const border=Math.max(2, Math.round(Math.min(w,h)*0.03));
+  let br=0,bg=0,bb=0,count=0;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      if(x<border || y<border || x>=w-border || y>=h-border){
+        const i=(y*w+x)*4;
+        br+=color[i]; bg+=color[i+1]; bb+=color[i+2]; count++;
+      }
+    }
+  }
+  br/=count||1; bg/=count||1; bb/=count||1;
+  const mask=new Float32Array(w*h);
+  const soft=Math.max(20, threshold*2.5 + 20);
+  for(let p=0,i=0;p<mask.length;p++,i+=4){
+    const dr=color[i]-br, dg=color[i+1]-bg, db=color[i+2]-bb;
+    const dist=Math.sqrt(dr*dr+dg*dg+db*db);
+    let m=(dist-threshold)/soft;
+    // Support either dark or bright border backgrounds.
+    if(m<0.001){
+      const lum=Math.abs((color[i]+color[i+1]+color[i+2])/3 - (br+bg+bb)/3);
+      m=Math.max(m,(lum-threshold*0.5)/(soft*0.8));
+    }
+    mask[p]=clamp(m,0,1);
+  }
+  return blurFloatMask(mask,w,h,1.2);
+}
+
+function blurFloatMask(floatArr,w,h,radius){
+  radius = Math.max(0, radius||0);
+  if(radius<=0) return new Float32Array(floatArr);
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const ctx=c.getContext('2d');
+  const img=ctx.createImageData(w,h);
+  for(let p=0,i=0;p<floatArr.length;p++,i+=4){
+    const v=Math.round(clamp(floatArr[p],0,1)*255);
+    img.data[i]=img.data[i+1]=img.data[i+2]=v; img.data[i+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  const bc=document.createElement('canvas'); bc.width=w; bc.height=h;
+  const bctx=bc.getContext('2d');
+  bctx.filter=`blur(${radius}px)`;
+  bctx.drawImage(c,0,0);
+  bctx.filter='none';
+  const bd=bctx.getImageData(0,0,w,h).data;
+  const out=new Float32Array(w*h);
+  for(let p=0,i=0;p<out.length;p++,i+=4) out[p]=bd[i]/255;
+  return out;
+}
+
+function buildNormalFromHeight(height, mask, w, h, options={}){
+  const mode=options.mode || 'opengl';
+  const strength=options.strength || 2.0;
+  const radius=Math.max(1, options.radius||1);
+  const blur=options.blur || 0;
+  let hmap = height;
+  if(blur>0) hmap = blurFloatMask(hmap,w,h,blur);
+  const out=new ImageData(w,h);
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const p=y*w+x, i=p*4;
+      if(mask[p] <= 0.02){
+        out.data[i]=128; out.data[i+1]=128; out.data[i+2]=255; out.data[i+3]=255;
+        continue;
+      }
+      const xl=Math.max(0,x-radius), xr=Math.min(w-1,x+radius);
+      const yt=Math.max(0,y-radius), yb=Math.min(h-1,y+radius);
+      const hL=hmap[y*w+xl], hR=hmap[y*w+xr], hT=hmap[yt*w+x], hB=hmap[yb*w+x];
+      let nx=-(hR-hL)*strength;
+      let ny=-(hB-hT)*strength;
+      if(mode==='directx') ny=-ny;
+      let nz=1.0;
+      const len=Math.hypot(nx,ny,nz) || 1;
+      nx/=len; ny/=len; nz/=len;
+      out.data[i]=Math.round((nx*0.5+0.5)*255);
+      out.data[i+1]=Math.round((ny*0.5+0.5)*255);
+      out.data[i+2]=Math.round((nz*0.5+0.5)*255);
+      out.data[i+3]=255;
+    }
+  }
+  return out;
+}
+
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
 function pseudoRandom(a,b){const x=Math.sin(a*127.1+b*311.7)*43758.5453123; return x-Math.floor(x);} 
 updateLabels();
